@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:persisto/offline_interceptor.dart';
+import 'package:persisto/persisto.dart';
 
 const _pokemonSource = 'pokemon';
 
@@ -169,7 +169,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Pokémon catalog via PokeAPI',
+              'Pokemon catalog via PokeAPI',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
@@ -211,7 +211,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
               children: [
                 ElevatedButton(
                   onPressed: _loading ? null : _loadPokemon,
-                  child: const Text('Fetch Pokémon'),
+                  child: const Text('Fetch Pokemon'),
                 ),
                 const SizedBox(width: 12),
                 ElevatedButton(
@@ -256,7 +256,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
               child: _pokemon.isEmpty
                   ? const Center(
                       child: Text(
-                        'No Pokémon loaded yet. Tap "Fetch Pokémon".',
+                        'No Pokemon loaded yet. Tap "Fetch Pokemon".',
                       ),
                     )
                   : ListView.separated(
@@ -290,13 +290,13 @@ class _DemoHomePageState extends State<DemoHomePage> {
   }) {
     if (!_compareWithCache) {
       if (hasCache && matchesCache) {
-        return 'Returned cached Pokémon based on cache-first policy.';
+        return 'Returned cached Pokemon based on cache-first policy.';
       }
-      return 'Fetched Pokémon from network.';
+      return 'Fetched Pokemon from network.';
     }
 
     if (!hasCache) {
-      return 'No cached Pokémon available. Stored the fresh network response.';
+      return 'No cached Pokemon available. Stored the fresh network response.';
     }
 
     if (matchesCache) {
@@ -305,7 +305,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
           : 'Network response matched cache. Cache reused without refresh.';
     }
 
-    return 'Network response differed from cache. Cache updated with new Pokémon.';
+    return 'Network response differed from cache. Cache updated with new Pokemon.';
   }
 
   List<Map<String, dynamic>> _extractPokemon(dynamic data) {

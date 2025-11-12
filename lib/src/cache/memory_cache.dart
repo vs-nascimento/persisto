@@ -35,4 +35,3 @@ class _CacheEntry {
 
   _CacheEntry({required this.value, required this.timestamp});
 }
-

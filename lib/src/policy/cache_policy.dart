@@ -9,4 +9,3 @@ class CachePolicy {
     this.strategy = CacheStrategy.networkFirst,
   });
 }
-

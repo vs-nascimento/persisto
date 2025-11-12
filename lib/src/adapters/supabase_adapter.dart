@@ -83,4 +83,3 @@ class SupabaseAdapter implements DataAdapter {
     });
   }
 }
-

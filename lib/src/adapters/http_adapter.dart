@@ -49,4 +49,3 @@ class HttpAdapter implements DataAdapter {
   @override
   Stream<dynamic>? listen(String path) => null;
 }
-

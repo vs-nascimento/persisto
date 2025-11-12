@@ -8,7 +8,7 @@ class HiveCache implements CacheStorage {
   final String boxName;
   late Box _box;
 
-  HiveCache({this.boxName = 'offline_interceptor_cache'});
+  HiveCache({this.boxName = 'persisto_cache'});
 
   Future<void> init() async {
     _box = await Hive.openBox(boxName);
@@ -38,4 +38,3 @@ class HiveCache implements CacheStorage {
   @override
   Future<void> clear() async => _box.clear();
 }
-

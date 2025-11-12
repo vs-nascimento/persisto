@@ -7,4 +7,3 @@ abstract class CacheStorage {
 
   Future<void> clear();
 }
-

@@ -1,6 +1,6 @@
-## offline_interceptor
+## persisto
 
-`offline_interceptor` is a framework-agnostic interception and caching layer tailored for offline-first experiences. Plug it into any repository—REST, Firebase, Supabase, SQLite, or custom APIs—and it will:
+`persisto` is a framework-agnostic interception and caching layer tailored for offline-first experiences. Plug it into any repository - REST, Firebase, Supabase, SQLite, or custom APIs - and it will:
 
 - Intercept read/write operations.
 - Apply cache policies per data source.
@@ -25,7 +25,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  offline_interceptor: ^0.0.1
+  persisto: ^0.1.0
   http: ^1.2.2
   dio: ^5.4.3
   hive: ^2.2.3
@@ -144,7 +144,7 @@ Invoke `processQueue` whenever connectivity is restored.
 
 ## Example app
 
-`example/lib/main.dart` demonstrates the library with the public [PokéAPI](https://pokeapi.co/):
+`example/lib/main.dart` demonstrates the library with the public [PokeAPI](https://pokeapi.co/):
 
 - Switch cache strategies per request.
 - Adjust TTL overrides.

@@ -106,4 +106,3 @@ class FirebaseAdapter implements DataAdapter {
     }
   }
 }
-

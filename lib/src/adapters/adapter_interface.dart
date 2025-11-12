@@ -9,4 +9,3 @@ abstract class DataAdapter {
 
   Stream<dynamic>? listen(String path);
 }
-

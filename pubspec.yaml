@@ -1,6 +1,6 @@
 name: persisto
 description: "Offline data interceptor and caching layer for offline-first apps."
-version: 0.0.1
+version: 0.1.0
 homepage: https://github.com/vs-nascimento/persisto
 repository: https://github.com/vs-nascimento/persisto
 
