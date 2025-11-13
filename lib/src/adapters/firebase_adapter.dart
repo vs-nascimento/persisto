@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../core/persisto_exception.dart';
 import 'adapter_interface.dart';
 
 /// Signature used to customize Firestore queries before execution.
@@ -53,28 +54,58 @@ class FirebaseAdapter implements DataAdapter {
 
   @override
   Future<dynamic> get(String path, {Map<String, dynamic>? params}) async {
-    final builder =
-        params?['queryBuilder'] as FirebaseQueryBuilder? ?? queryBuilder;
+    try {
+      final builder =
+          params?['queryBuilder'] as FirebaseQueryBuilder? ?? queryBuilder;
 
-    if (path.isEmpty) {
-      Query<Map<String, dynamic>> query = _collection;
-      if (builder != null) {
-        query = builder(query);
+      if (path.isEmpty) {
+        Query<Map<String, dynamic>> query = _collection;
+        if (builder != null) {
+          query = builder(query);
+        }
+        final snapshot = await query.get();
+        return snapshot.docs.map(_mapDocument).toList();
+      } else {
+        final doc = await _collection.doc(path).get();
+        if (!doc.exists) return null;
+        return _mapDocument(doc);
       }
-      final snapshot = await query.get();
-      return snapshot.docs.map(_mapDocument).toList();
-    } else {
-      final doc = await _collection.doc(path).get();
-      if (!doc.exists) return null;
-      return _mapDocument(doc);
+    } on FirebaseException catch (e) {
+      throw AdapterException(
+        'Firestore error: ${e.message ?? 'Unknown Firestore error'}',
+        e,
+      );
+    } catch (e) {
+      if (e is PersistoException) {
+        rethrow;
+      }
+      throw AdapterException(
+        'Unexpected error in FirebaseAdapter.get',
+        e,
+      );
     }
   }
 
   @override
   Future<dynamic> post(String path, Map<String, dynamic> body) async {
-    final docRef = await _collection.add(body);
-    final snapshot = await docRef.get();
-    return _mapDocument(snapshot);
+    try {
+      final docRef = await _collection.add(body);
+      final snapshot = await docRef.get();
+      return _mapDocument(snapshot);
+    } on FirebaseException catch (e) {
+      throw AdapterException(
+        'Firestore error: ${e.message ?? 'Unknown Firestore error'}',
+        e,
+      );
+    } catch (e) {
+      if (e is PersistoException) {
+        rethrow;
+      }
+      throw AdapterException(
+        'Unexpected error in FirebaseAdapter.post',
+        e,
+      );
+    }
   }
 
   @override
@@ -82,10 +113,25 @@ class FirebaseAdapter implements DataAdapter {
     if (path.isEmpty) {
       throw ArgumentError('Document path is required for FirebaseAdapter.put');
     }
-    final docRef = _collection.doc(path);
-    await docRef.set(body, SetOptions(merge: true));
-    final snapshot = await docRef.get();
-    return _mapDocument(snapshot);
+    try {
+      final docRef = _collection.doc(path);
+      await docRef.set(body, SetOptions(merge: true));
+      final snapshot = await docRef.get();
+      return _mapDocument(snapshot);
+    } on FirebaseException catch (e) {
+      throw AdapterException(
+        'Firestore error: ${e.message ?? 'Unknown Firestore error'}',
+        e,
+      );
+    } catch (e) {
+      if (e is PersistoException) {
+        rethrow;
+      }
+      throw AdapterException(
+        'Unexpected error in FirebaseAdapter.put',
+        e,
+      );
+    }
   }
 
   @override
@@ -95,8 +141,23 @@ class FirebaseAdapter implements DataAdapter {
         'Document path is required for FirebaseAdapter.delete',
       );
     }
-    await _collection.doc(path).delete();
-    return {'id': path, 'deleted': true};
+    try {
+      await _collection.doc(path).delete();
+      return {'id': path, 'deleted': true};
+    } on FirebaseException catch (e) {
+      throw AdapterException(
+        'Firestore error: ${e.message ?? 'Unknown Firestore error'}',
+        e,
+      );
+    } catch (e) {
+      if (e is PersistoException) {
+        rethrow;
+      }
+      throw AdapterException(
+        'Unexpected error in FirebaseAdapter.delete',
+        e,
+      );
+    }
   }
 
   @override

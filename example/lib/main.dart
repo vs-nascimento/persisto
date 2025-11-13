@@ -169,8 +169,32 @@ class _DemoHomePageState extends State<DemoHomePage> {
         _lastUsedCache = matchesCache;
         _comparisonMessage = comparisonMessage;
       });
+    } on HttpException catch (e) {
+      // Handle HTTP errors (4xx, 5xx)
+      setState(() {
+        _error = 'HTTP Error ${e.statusCode}: ${e.message}';
+        if (e.responseBody != null) {
+          _error = '$_error\nResponse: $e.responseBody';
+        }
+      });
+    } on NetworkException catch (e) {
+      // Handle network errors (timeout, connection, etc.)
+      setState(() => _error = 'Network Error: ${e.message}');
+    } on CacheException catch (e) {
+      // Handle cache errors
+      setState(() => _error = 'Cache Error: ${e.message}');
+    } on PolicyException catch (e) {
+      // Handle cache policy errors
+      setState(() => _error = 'Policy Error: ${e.message}');
+    } on AdapterException catch (e) {
+      // Handle adapter errors
+      setState(() => _error = 'Adapter Error: ${e.message}');
+    } on PersistoException catch (e) {
+      // Handle other Persisto errors
+      setState(() => _error = 'Persisto Error: ${e.message}');
     } catch (e) {
-      setState(() => _error = e.toString());
+      // Handle unexpected errors
+      setState(() => _error = 'Unexpected Error: $e');
     } finally {
       setState(() => _loading = false);
     }

@@ -1,6 +1,7 @@
 // persisto - Offline cache & sync toolkit.
 
 export 'src/core/offline_interceptor.dart';
+export 'src/core/persisto_exception.dart';
 export 'src/policy/cache_policy.dart';
 export 'src/cache/cache_interface.dart';
 export 'src/cache/hive_cache.dart';

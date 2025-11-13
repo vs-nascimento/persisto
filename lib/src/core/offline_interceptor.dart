@@ -3,6 +3,7 @@ import 'package:collection/collection.dart';
 import '../cache/cache_interface.dart';
 import '../policy/cache_policy.dart';
 import '../utils/network_checker.dart';
+import 'persisto_exception.dart';
 
 /// Coordinates network calls, caching, and offline recovery.
 class OfflineInterceptor {
@@ -37,7 +38,7 @@ class OfflineInterceptor {
 
     final resolvedTtl = ttlOverride ?? policy?.ttl;
     if (resolvedTtl == null) {
-      throw Exception(
+      throw PolicyException(
         'No cache policy defined for $source. '
         'Provide a policy in the interceptor or pass ttlOverride.',
       );
@@ -58,7 +59,7 @@ class OfflineInterceptor {
     if (resolvedStrategy == CacheStrategy.cacheOnly) {
       if (cacheValue != null && !cacheExpired) return cacheValue;
       if (cacheValue != null) return cacheValue;
-      throw Exception(
+      throw CacheException(
         'Cache only strategy enabled but no cache available for $key.',
       );
     }
@@ -79,21 +80,47 @@ class OfflineInterceptor {
               const DeepCollectionEquality().equals(cacheValue, data);
           if (equals) {
             if (refreshCacheOnEquality) {
-              await cache.write(key, cacheValue);
+              try {
+                await cache.write(key, cacheValue);
+              } catch (e) {
+                // Cache write failed, but we can still return the data
+                // Log or handle cache write errors if needed
+              }
             }
             return cacheValue;
           }
         }
 
-        await cache.write(key, data);
+        try {
+          await cache.write(key, data);
+        } catch (e) {
+          // Cache write failed, but we can still return the data
+          // Log or handle cache write errors if needed
+        }
         return data;
-      } catch (_) {
-        if (cacheValue != null) return cacheValue;
+      } on PersistoException {
+        // Re-throw Persisto exceptions (NetworkException, HttpException, etc.)
+        // but try to return cache if available
+        if (cacheValue != null) {
+          return cacheValue;
+        }
         rethrow;
+      } catch (e) {
+        // Unexpected error - try to return cache if available
+        if (cacheValue != null) {
+          return cacheValue;
+        }
+        // Wrap unexpected errors in AdapterException
+        throw AdapterException(
+          'Unexpected error during request: ${e.toString()}',
+          e,
+        );
       }
     } else {
       if (cacheValue != null) return cacheValue;
-      throw Exception('No network and no cache available.');
+      throw NetworkException(
+        'No network connection available and no cache available for $key.',
+      );
     }
   }
 }

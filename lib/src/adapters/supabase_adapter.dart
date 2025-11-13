@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/persisto_exception.dart';
 import 'adapter_interface.dart';
 
 /// Signature used to customize Supabase `PostgrestFilterBuilder` queries.
@@ -29,27 +30,57 @@ class SupabaseAdapter implements DataAdapter {
 
   @override
   Future<dynamic> get(String path, {Map<String, dynamic>? params}) async {
-    final SupabaseQueryBuilder? builder =
-        (params?['queryBuilder'] as SupabaseQueryBuilder?) ?? queryBuilder;
+    try {
+      final SupabaseQueryBuilder? builder =
+          (params?['queryBuilder'] as SupabaseQueryBuilder?) ?? queryBuilder;
 
-    if (path.isEmpty) {
-      dynamic query = client.from(table).select();
-      if (builder != null) {
-        query = builder(query);
+      if (path.isEmpty) {
+        dynamic query = client.from(table).select();
+        if (builder != null) {
+          query = builder(query);
+        }
+        return await query;
+      } else {
+        return await client
+            .from(table)
+            .select()
+            .eq(primaryKey, path)
+            .maybeSingle();
       }
-      return await query;
-    } else {
-      return await client
-          .from(table)
-          .select()
-          .eq(primaryKey, path)
-          .maybeSingle();
+    } on PostgrestException catch (e) {
+      throw AdapterException(
+        'Supabase error: ${e.message}',
+        e,
+      );
+    } catch (e) {
+      if (e is PersistoException) {
+        rethrow;
+      }
+      throw AdapterException(
+        'Unexpected error in SupabaseAdapter.get',
+        e,
+      );
     }
   }
 
   @override
   Future<dynamic> post(String path, Map<String, dynamic> body) async {
-    return await client.from(table).insert(body).select().maybeSingle();
+    try {
+      return await client.from(table).insert(body).select().maybeSingle();
+    } on PostgrestException catch (e) {
+      throw AdapterException(
+        'Supabase error: ${e.message}',
+        e,
+      );
+    } catch (e) {
+      if (e is PersistoException) {
+        rethrow;
+      }
+      throw AdapterException(
+        'Unexpected error in SupabaseAdapter.post',
+        e,
+      );
+    }
   }
 
   @override
@@ -59,12 +90,27 @@ class SupabaseAdapter implements DataAdapter {
         'Primary key value is required for SupabaseAdapter.put',
       );
     }
-    return await client
-        .from(table)
-        .update(body)
-        .eq(primaryKey, path)
-        .select()
-        .maybeSingle();
+    try {
+      return await client
+          .from(table)
+          .update(body)
+          .eq(primaryKey, path)
+          .select()
+          .maybeSingle();
+    } on PostgrestException catch (e) {
+      throw AdapterException(
+        'Supabase error: ${e.message}',
+        e,
+      );
+    } catch (e) {
+      if (e is PersistoException) {
+        rethrow;
+      }
+      throw AdapterException(
+        'Unexpected error in SupabaseAdapter.put',
+        e,
+      );
+    }
   }
 
   @override
@@ -74,8 +120,23 @@ class SupabaseAdapter implements DataAdapter {
         'Primary key value is required for SupabaseAdapter.delete',
       );
     }
-    await client.from(table).delete().eq(primaryKey, path);
-    return {'id': path, 'deleted': true};
+    try {
+      await client.from(table).delete().eq(primaryKey, path);
+      return {'id': path, 'deleted': true};
+    } on PostgrestException catch (e) {
+      throw AdapterException(
+        'Supabase error: ${e.message}',
+        e,
+      );
+    } catch (e) {
+      if (e is PersistoException) {
+        rethrow;
+      }
+      throw AdapterException(
+        'Unexpected error in SupabaseAdapter.delete',
+        e,
+      );
+    }
   }
 
   @override

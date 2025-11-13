@@ -15,7 +15,7 @@ Add `persisto` to your project:
 
 ```yaml
 dependencies:
-  persisto: ^0.2.0
+  persisto: ^0.3.0
 ```
 
 This package bundles ready-to-use adapters for `package:http`, Dio, Cloud Firestore, and Supabase, plus cache backends powered by memory, Hive, SharedPreferences, and Sqflite. No extra dependencies are required beyond the ones already declared by the package, but you must initialise platform plugins where required (e.g. `Hive.initFlutter()`, Sqflite database path).
@@ -143,6 +143,62 @@ await syncManager.processQueue((op) async {
 ```
 
 Call `processQueue` after regaining connectivity to replay pending operations.
+
+---
+
+## Error handling
+
+`persisto` provides comprehensive error handling with specific exception types that allow you to handle different error scenarios appropriately:
+
+```dart
+try {
+  final data = await interceptor.fetch(
+    source: 'posts',
+    key: '/posts',
+    request: () => httpAdapter.get('/posts'),
+  );
+} on HttpException catch (e) {
+  // Handle HTTP errors (4xx, 5xx)
+  print('HTTP Error ${e.statusCode}: ${e.message}');
+  if (e.responseBody != null) {
+    print('Response: ${e.responseBody}');
+  }
+  if (e.isClientError) {
+    // Client error (4xx) - bad request, not found, etc.
+  } else if (e.isServerError) {
+    // Server error (5xx) - internal server error, etc.
+  }
+} on NetworkException catch (e) {
+  // Handle network errors (timeout, connection failures, etc.)
+  print('Network Error: ${e.message}');
+} on CacheException catch (e) {
+  // Handle cache errors
+  print('Cache Error: ${e.message}');
+} on PolicyException catch (e) {
+  // Handle cache policy configuration errors
+  print('Policy Error: ${e.message}');
+} on AdapterException catch (e) {
+  // Handle adapter-specific errors
+  print('Adapter Error: ${e.message}');
+} on PersistoException catch (e) {
+  // Handle other Persisto errors
+  print('Persisto Error: ${e.message}');
+} catch (e) {
+  // Handle unexpected errors
+  print('Unexpected Error: $e');
+}
+```
+
+### Exception types
+
+- **`PersistoException`**: Base class for all Persisto-related errors
+- **`NetworkException`**: Thrown when network requests fail (timeout, connection errors, etc.)
+- **`HttpException`**: Thrown when HTTP requests return non-success status codes (includes `statusCode`, `responseBody`, `isClientError`, `isServerError`)
+- **`CacheException`**: Thrown when cache operations fail or cache is unavailable
+- **`AdapterException`**: Thrown when adapter operations fail (Firebase, Supabase, etc.)
+- **`PolicyException`**: Thrown when cache policy configuration is invalid or missing
+
+All exceptions include a `message` and optional `cause` (the underlying exception) for detailed error information.
 
 ---
 
