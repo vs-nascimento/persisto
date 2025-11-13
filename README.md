@@ -1,93 +1,66 @@
 ## persisto
 
-`persisto` is a framework-agnostic interception and caching layer tailored for offline-first experiences. Plug it into any repository - REST, Firebase, Supabase, SQLite, or custom APIs - and it will:
+`persisto` is an offline-first interception and caching toolkit for Dart and Flutter. Plug it into any repository (REST, Firebase, Supabase, SQLite, or custom APIs) and it will:
 
 - Intercept read/write operations.
 - Apply cache policies per data source.
 - Serve cached responses automatically when the network fails.
-- Sync queued mutations once connectivity returns.
-
----
-
-## Highlights
-
-- **Adapters included:** HTTP (`package:http`), Dio, Cloud Firestore, Supabase.
-- **Per-request overrides:** change strategy or TTL dynamically in `fetch`.
-- **Equality-aware cache updates:** avoid rewriting cache when payloads match.
-- **Sync queue:** persist POST/PUT/DELETE intents and replay online.
-- **Framework agnostic:** works with Flutter or plain Dart.
+- Queue mutations offline and replay them when connectivity returns.
 
 ---
 
 ## Installation
 
-Add to your `pubspec.yaml`:
+Add `persisto` to your project:
 
 ```yaml
 dependencies:
-  persisto: ^0.1.0
-  http: ^1.2.2
-  dio: ^5.4.3
-  hive: ^2.2.3
-  connectivity_plus: ^6.0.3
+  persisto: ^0.2.0
 ```
 
-Optional:
-
-- `firebase_core`, `cloud_firestore`
-- `supabase_flutter`
-
-Initialize Hive before using the cache:
-
-```dart
-await Hive.initFlutter();
-final cache = HiveCache();
-await cache.init();
-```
+This package bundles ready-to-use adapters for `package:http`, Dio, Cloud Firestore, and Supabase, plus cache backends powered by memory, Hive, SharedPreferences, and Sqflite. No extra dependencies are required beyond the ones already declared by the package, but you must initialise platform plugins where required (e.g. `Hive.initFlutter()`, Sqflite database path).
 
 ---
 
 ## Quick start
 
 ```dart
-final httpAdapter = HttpAdapter(baseUrl: 'https://example.com/api');
-final dioAdapter = DioAdapter(baseUrl: 'https://example.com/api');
-final firebaseAdapter = FirebaseAdapter(collectionPath: 'posts');
-final supabaseAdapter = SupabaseAdapter(
-  client: Supabase.instance.client,
-  table: 'posts',
-);
+import 'package:persisto/persisto.dart';
 
-final interceptor = OfflineInterceptor(
-  cache: cache,
-  policies: {
-    'posts': CachePolicy(
-      ttl: const Duration(hours: 2),
-      strategy: CacheStrategy.cacheFirst,
-    ),
-    'profile': CachePolicy(
-      ttl: const Duration(minutes: 10),
-      strategy: CacheStrategy.networkFirst,
-    ),
-  },
-);
+Future<void> bootstrap() async {
+  final cache = SharedPreferencesCache();
 
-final posts = await interceptor.fetch(
-  source: 'posts',
-  key: '/posts',
-  request: () => httpAdapter.get('/posts'),
-);
+  final interceptor = OfflineInterceptor(
+    cache: cache,
+    policies: {
+      'posts': CachePolicy(
+        ttl: const Duration(minutes: 10),
+        strategy: CacheStrategy.cacheFirst,
+      ),
+    },
+  );
+
+  final httpAdapter = HttpAdapter(baseUrl: 'https://example.com');
+
+  final posts = await interceptor.fetch(
+    source: 'posts',
+    key: '/posts',
+    request: () => httpAdapter.get('/posts'),
+  );
+
+  print(posts);
+}
 ```
 
-Override per call:
+Override behaviour per call when necessary:
 
 ```dart
-final hotPosts = await interceptor.fetch(
+final freshPosts = await interceptor.fetch(
   source: 'posts',
   key: '/posts?filter=hot',
-  request: () => dioAdapter.get('/posts', params: {'filter': 'hot'}),
+  request: () => httpAdapter.get('/posts', params: {'filter': 'hot'}),
   strategyOverride: CacheStrategy.networkFirst,
-  ttlOverride: const Duration(minutes: 5),
+  ttlOverride: const Duration(minutes: 2),
   compareWithCache: true,
   refreshCacheOnEquality: false,
   equalityComparer: (cached, fresh) =>
@@ -97,9 +70,38 @@ final hotPosts = await interceptor.fetch(
 
 ---
 
+## Cache backends
+
+| Cache class | When to use | Notes |
+| --- | --- | --- |
+| `MemoryCache` | Unit tests, short-lived sessions | Pure Dart, no setup |
+| `SharedPreferencesCache` | Lightweight key-value persistence | Works out of the box on all Flutter platforms |
+| `HiveCache` | Structured offline storage | Call `Hive.initFlutter()` and `HiveCache().init()` before usage |
+| `SqfliteCache` | Durable cache with SQL querying | Provide a writable database path when constructing the cache |
+
+```dart
+final cache = SqfliteCache(databasePath: '/data/user/0/app/cache/persisto.db');
+await cache.write('users', {'data': []});
+```
+
+---
+
+## Built-in adapters
+
+| Adapter | Package | Highlights |
+| --- | --- | --- |
+| `HttpAdapter` | `package:http` | Zero-config REST client |
+| `DioAdapter` | `dio` | Interceptors, cancellation, retries |
+| `FirebaseAdapter` | `cloud_firestore` | Query customisation and realtime listeners |
+| `SupabaseAdapter` | `supabase_flutter` | Select/filter helpers and realtime streams |
+
+Implement `DataAdapter` to integrate any other backend.
+
+---
+
 ## Cache comparison helpers
 
-Skip cache rewrites when responses match:
+Skip unnecessary cache rewrites by enabling payload comparison:
 
 ```dart
 await interceptor.fetch(
@@ -112,9 +114,11 @@ await interceptor.fetch(
 );
 ```
 
+When the comparer returns `true`, the cached copy is reused (optionally refreshing TTL) and the network response is discarded.
+
 ---
 
-## Sync queue
+## Sync queue for offline mutations
 
 ```dart
 final syncManager = SyncManager();
@@ -138,18 +142,18 @@ await syncManager.processQueue((op) async {
 });
 ```
 
-Invoke `processQueue` whenever connectivity is restored.
+Call `processQueue` after regaining connectivity to replay pending operations.
 
 ---
 
 ## Example app
 
-`example/lib/main.dart` demonstrates the library with the public [PokeAPI](https://pokeapi.co/):
+The Flutter example in `example/lib/main.dart` fetches the public PokeAPI feed and lets you:
 
-- Switch cache strategies per request.
-- Adjust TTL overrides.
-- Toggle equality comparison & TTL refresh.
-- Tune pagination (`limit`/`offset`) and observe cache-key changes.
+- Switch between Hive, SharedPreferences, and in-memory caches.
+- Override TTL and cache strategy per request.
+- Toggle equality comparison to avoid unnecessary cache writes.
+- Adjust pagination (`limit`/`offset`) and observe how cache keys change.
 
 Run it with:
 
@@ -160,28 +164,28 @@ flutter run
 
 ---
 
-## Maintenance utilities
+## Maintenance helpers
 
 ```dart
-await cache.delete('/posts'); // Drop a single entry.
-await cache.clear(); // Flush entire cache.
+await cache.delete('/posts'); // Drop a single entry
+await cache.clear(); // Flush entire cache
 ```
 
 ---
 
 ## Testing checklist
 
-1. Inject mock adapters/caches via `DataAdapter` and `CacheStorage`.
-2. Validate TTL expiry by stubbing cache timestamps.
-3. Assert equality comparers skip cache writes.
-4. Cover sync-queue replay success & failure paths.
+1. Inject fake adapters and caches via `DataAdapter` / `CacheStorage` implementations.
+2. Simulate TTL expiry by tweaking stored timestamps.
+3. Verify equality comparers skip cache writes.
+4. Cover sync queue success and retry scenarios.
 
 ---
 
 ## Contributing
 
-1. Fork & clone the repository.
+1. Fork and clone the repository.
 2. Create a feature branch.
 3. Implement changes + tests.
-4. Run `flutter analyze` and `flutter test`.
-5. Open a pull request describing the change.
+4. Run `flutter analyze`, `flutter test`, and `dart pub publish --dry-run`.
+5. Submit a pull request describing your work.

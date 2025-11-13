@@ -1,8 +1,21 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:persisto/persisto.dart';
 
 /// Basic smoke tests to ensure main exports are usable.
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  const connectivityChannel = MethodChannel(
+    'dev.fluttercommunity.plus/connectivity',
+  );
+  connectivityChannel.setMockMethodCallHandler((MethodCall methodCall) async {
+    if (methodCall.method == 'check') {
+      return ['wifi'];
+    }
+    return null;
+  });
+
   test('creates offline interceptor with in-memory cache', () async {
     final interceptor = OfflineInterceptor(
       cache: MemoryCache(),

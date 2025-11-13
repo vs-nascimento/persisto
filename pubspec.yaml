@@ -1,6 +1,6 @@
 name: persisto
 description: "Offline data interceptor and caching layer for offline-first apps."
-version: 0.1.0
+version: 0.2.0
 homepage: https://github.com/vs-nascimento/persisto
 repository: https://github.com/vs-nascimento/persisto
 
@@ -11,13 +11,15 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  dio: ^5.4.3
-  cloud_firestore: ^5.4.4
-  supabase_flutter: ^2.5.7
-  http: ^1.2.2
+  dio: ^5.9.0
+  cloud_firestore: ^6.1.0
+  supabase_flutter: ^2.10.3
+  http: ^1.6.0
   hive: ^2.2.3
-  connectivity_plus: ^6.0.3
-  collection: ^1.18.0
+  connectivity_plus: ^7.0.0
+  collection: ^1.19.1
+  shared_preferences: ^2.3.2
+  sqflite: ^2.3.3+1
 
 dev_dependencies:
   flutter_test:

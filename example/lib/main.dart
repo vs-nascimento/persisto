@@ -9,28 +9,24 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
 
-  final cache = HiveCache();
-  await cache.init();
+  final hiveCache = HiveCache();
+  await hiveCache.init();
+
+  final cacheOptions = <String, CacheStorage>{
+    'Hive': hiveCache,
+    'SharedPreferences': SharedPreferencesCache(),
+    'Memory': MemoryCache(),
+  };
 
   final httpAdapter = HttpAdapter(
     baseUrl: 'https://pokeapi.co/api/v2',
     headers: const {'Content-Type': 'application/json'},
   );
 
-  final interceptor = OfflineInterceptor(
-    cache: cache,
-    policies: {
-      _pokemonSource: CachePolicy(
-        ttl: const Duration(minutes: 5),
-        strategy: CacheStrategy.cacheFirst,
-      ),
-    },
-  );
-
   runApp(
     OfflineDemoApp(
-      cache: cache,
-      interceptor: interceptor,
+      cacheOptions: cacheOptions,
+      defaultCacheKey: 'Hive',
       httpAdapter: httpAdapter,
     ),
   );
@@ -39,25 +35,25 @@ Future<void> main() async {
 class OfflineDemoApp extends StatelessWidget {
   const OfflineDemoApp({
     super.key,
-    required this.cache,
-    required this.interceptor,
+    required this.cacheOptions,
+    required this.defaultCacheKey,
     required this.httpAdapter,
   });
 
-  final HiveCache cache;
-  final OfflineInterceptor interceptor;
+  final Map<String, CacheStorage> cacheOptions;
+  final String defaultCacheKey;
   final HttpAdapter httpAdapter;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Offline Interceptor Demo',
+      title: 'Persisto Demo',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
       ),
       home: DemoHomePage(
-        cache: cache,
-        interceptor: interceptor,
+        cacheOptions: cacheOptions,
+        defaultCacheKey: defaultCacheKey,
         httpAdapter: httpAdapter,
       ),
     );
@@ -67,13 +63,13 @@ class OfflineDemoApp extends StatelessWidget {
 class DemoHomePage extends StatefulWidget {
   const DemoHomePage({
     super.key,
-    required this.cache,
-    required this.interceptor,
+    required this.cacheOptions,
+    required this.defaultCacheKey,
     required this.httpAdapter,
   });
 
-  final HiveCache cache;
-  final OfflineInterceptor interceptor;
+  final Map<String, CacheStorage> cacheOptions;
+  final String defaultCacheKey;
   final HttpAdapter httpAdapter;
 
   @override
@@ -94,6 +90,37 @@ class _DemoHomePageState extends State<DemoHomePage> {
   String? _comparisonMessage;
   int _limit = 20;
   int _offset = 0;
+  late String _selectedCacheKey;
+  late CacheStorage _activeCache;
+  late OfflineInterceptor _interceptor;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedCacheKey = widget.defaultCacheKey;
+    _activeCache = widget.cacheOptions[_selectedCacheKey]!;
+    _interceptor = _buildInterceptor(_activeCache);
+  }
+
+  OfflineInterceptor _buildInterceptor(CacheStorage cache) =>
+      OfflineInterceptor(
+        cache: cache,
+        policies: {
+          _pokemonSource: CachePolicy(
+            ttl: const Duration(minutes: 5),
+            strategy: CacheStrategy.cacheFirst,
+          ),
+        },
+      );
+
+  Future<void> _switchCache(String cacheKey) async {
+    setState(() {
+      _selectedCacheKey = cacheKey;
+      _activeCache = widget.cacheOptions[cacheKey]!;
+      _interceptor = _buildInterceptor(_activeCache);
+    });
+    await _clearCache();
+  }
 
   Future<void> _loadPokemon() async {
     setState(() {
@@ -104,11 +131,11 @@ class _DemoHomePageState extends State<DemoHomePage> {
     try {
       final cacheKey = '/pokemon?limit=$_limit&offset=$_offset';
       final cachedSnapshot =
-          await widget.cache.read(cacheKey) as Map<String, dynamic>?;
+          await _activeCache.read(cacheKey) as Map<String, dynamic>?;
       final cachedData = cachedSnapshot?['data'];
 
       final data =
-          await widget.interceptor.fetch(
+          await _interceptor.fetch(
                 source: _pokemonSource,
                 key: cacheKey,
                 request: () async => widget.httpAdapter.get(
@@ -150,7 +177,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
   }
 
   Future<void> _clearCache() async {
-    await widget.cache.clear();
+    await _activeCache.clear();
     setState(() {
       _pokemon = const [];
       _lastUpdated = null;
@@ -162,7 +189,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Offline Interceptor + Hive')),
+      appBar: AppBar(title: const Text('Persisto Demo')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -171,6 +198,29 @@ class _DemoHomePageState extends State<DemoHomePage> {
             Text(
               'Pokemon catalog via PokeAPI',
               style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Text('Cache backend:'),
+                const SizedBox(width: 12),
+                DropdownButton<String>(
+                  value: _selectedCacheKey,
+                  onChanged: (value) {
+                    if (value != null) {
+                      _switchCache(value);
+                    }
+                  },
+                  items: widget.cacheOptions.keys
+                      .map(
+                        (label) => DropdownMenuItem<String>(
+                          value: label,
+                          child: Text(label),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             _PolicyOverrideControls(
@@ -191,13 +241,6 @@ class _DemoHomePageState extends State<DemoHomePage> {
                   setState(() => _compareWithCache = value),
               onRefreshChanged: (value) =>
                   setState(() => _refreshCacheOnEquality = value),
-            ),
-            const SizedBox(height: 12),
-            _OffsetControls(
-              limit: _limit,
-              offset: _offset,
-              onLimitChanged: (value) => setState(() => _limit = value),
-              onOffsetChanged: (value) => setState(() => _offset = value),
             ),
             const SizedBox(height: 12),
             _OffsetControls(

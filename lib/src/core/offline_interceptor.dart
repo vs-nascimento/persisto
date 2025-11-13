@@ -4,12 +4,25 @@ import '../cache/cache_interface.dart';
 import '../policy/cache_policy.dart';
 import '../utils/network_checker.dart';
 
+/// Coordinates network calls, caching, and offline recovery.
 class OfflineInterceptor {
-  final CacheStorage cache;
-  final Map<String, CachePolicy> policies;
-
+  /// Creates a new interceptor with the provided [cache] and [policies].
   OfflineInterceptor({required this.cache, required this.policies});
 
+  /// Storage used to persist responses.
+  final CacheStorage cache;
+
+  /// Policy map keyed by `source` identifiers.
+  final Map<String, CachePolicy> policies;
+
+  /// Fetches data while respecting caching rules and network availability.
+  ///
+  /// * [source] selects the [CachePolicy] to apply.
+  /// * [key] is the cache identifier for the request payload.
+  /// * [request] is invoked to fetch fresh data when needed.
+  /// * [strategyOverride] and [ttlOverride] allow per-call adjustments.
+  /// * When [compareWithCache] is `true` the optional [equalityComparer]
+  ///   decides whether the cache should be refreshed.
   Future<dynamic> fetch({
     required String source,
     required String key,

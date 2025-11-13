@@ -2,9 +2,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'adapter_interface.dart';
 
+/// Signature used to customize Supabase `PostgrestFilterBuilder` queries.
 typedef SupabaseQueryBuilder = dynamic Function(dynamic query);
 
+/// Supabase adapter backed by `supabase_flutter`.
 class SupabaseAdapter implements DataAdapter {
+  /// Creates a new adapter targeting [table] with the provided [client].
   SupabaseAdapter({
     required this.client,
     required this.table,
@@ -12,9 +15,16 @@ class SupabaseAdapter implements DataAdapter {
     this.queryBuilder,
   });
 
+  /// Supabase client instance.
   final SupabaseClient client;
+
+  /// Table name used for operations.
   final String table;
+
+  /// Column used as unique identifier for `get`/`put`/`delete` operations.
   final String primaryKey;
+
+  /// Optional default query override.
   final SupabaseQueryBuilder? queryBuilder;
 
   @override

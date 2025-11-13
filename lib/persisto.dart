@@ -5,6 +5,8 @@ export 'src/policy/cache_policy.dart';
 export 'src/cache/cache_interface.dart';
 export 'src/cache/hive_cache.dart';
 export 'src/cache/memory_cache.dart';
+export 'src/cache/shared_preferences_cache.dart';
+export 'src/cache/sqflite_cache.dart';
 export 'src/adapters/adapter_interface.dart';
 export 'src/adapters/http_adapter.dart';
 export 'src/adapters/dio_adapter.dart';

@@ -4,12 +4,17 @@ import 'package:hive/hive.dart';
 
 import 'cache_interface.dart';
 
+/// Hive-backed cache that stores JSON-encoded payloads.
 class HiveCache implements CacheStorage {
-  final String boxName;
-  late Box _box;
-
+  /// Creates a cache stored in Hive [boxName].
   HiveCache({this.boxName = 'persisto_cache'});
 
+  /// Box used to persist entries.
+  final String boxName;
+
+  late Box _box;
+
+  /// Opens the Hive box. Call before the first read/write.
   Future<void> init() async {
     _box = await Hive.openBox(boxName);
   }

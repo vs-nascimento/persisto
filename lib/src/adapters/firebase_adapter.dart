@@ -2,13 +2,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'adapter_interface.dart';
 
+/// Signature used to customize Firestore queries before execution.
 typedef FirebaseQueryBuilder =
     Query<Map<String, dynamic>> Function(Query<Map<String, dynamic>> query);
 
+/// Signature used to transform Firestore documents prior to returning.
 typedef FirebaseDocumentMapper =
     Map<String, dynamic> Function(Map<String, dynamic> data, String id);
 
+/// Firestore adapter that supports query customization and realtime streams.
 class FirebaseAdapter implements DataAdapter {
+  /// Creates a new [FirebaseAdapter] for the collection at [collectionPath].
   FirebaseAdapter({
     FirebaseFirestore? firestore,
     required this.collectionPath,
@@ -16,9 +20,16 @@ class FirebaseAdapter implements DataAdapter {
     this.documentMapper,
   }) : firestore = firestore ?? FirebaseFirestore.instance;
 
+  /// Firestore instance backing the adapter.
   final FirebaseFirestore firestore;
+
+  /// Root collection path handled by this adapter.
   final String collectionPath;
+
+  /// Optional default query customizer.
   final FirebaseQueryBuilder? queryBuilder;
+
+  /// Optional transformer used to map Firestore snapshots.
   final FirebaseDocumentMapper? documentMapper;
 
   CollectionReference<Map<String, dynamic>> get _collection => firestore

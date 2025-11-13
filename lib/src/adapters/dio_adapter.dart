@@ -2,7 +2,9 @@ import 'package:dio/dio.dart';
 
 import 'adapter_interface.dart';
 
+/// REST adapter backed by the Dio HTTP client.
 class DioAdapter implements DataAdapter {
+  /// Creates a new Dio adapter.
   DioAdapter({
     Dio? dio,
     String baseUrl = '',
@@ -19,6 +21,7 @@ class DioAdapter implements DataAdapter {
              ),
            );
 
+  /// Underlying Dio client.
   final Dio _dio;
 
   @override

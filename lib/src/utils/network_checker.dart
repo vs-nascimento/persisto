@@ -1,6 +1,8 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 
+/// Helper utility to determine if any network interface is online.
 class NetworkChecker {
+  /// Returns `true` when at least one connectivity result is not `none`.
   static Future<bool> get isOnline async {
     final dynamic result = await Connectivity().checkConnectivity();
 

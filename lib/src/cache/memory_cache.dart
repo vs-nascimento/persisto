@@ -1,5 +1,6 @@
 import 'cache_interface.dart';
 
+/// In-memory cache useful for tests and ephemeral storage.
 class MemoryCache implements CacheStorage {
   final Map<String, _CacheEntry> _store = {};
 

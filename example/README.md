@@ -1,16 +1,17 @@
-# example
+# Persisto example
 
-A new Flutter project.
+This Flutter example consumes the public [PokeAPI](https://pokeapi.co/) and demonstrates how to use `persisto` with different cache backends and per-request overrides.
 
-## Getting Started
+Key interactions:
 
-This project is a starting point for a Flutter application.
+- Switch between Hive, SharedPreferences, and in-memory caches.
+- Change the cache strategy and TTL before performing a request.
+- Toggle equality comparison to avoid rewriting identical payloads.
+- Adjust pagination (`limit` / `offset`) to see cache keys evolve.
 
-A few resources to get you started if this is your first Flutter project:
+Run the demo:
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+cd example
+flutter run
+```

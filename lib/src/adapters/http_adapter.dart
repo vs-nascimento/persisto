@@ -4,11 +4,16 @@ import 'package:http/http.dart' as http;
 
 import 'adapter_interface.dart';
 
+/// Basic REST adapter built on top of `package:http`.
 class HttpAdapter implements DataAdapter {
-  final String baseUrl;
-  final Map<String, String>? headers;
-
+  /// Creates a new adapter pointing to [baseUrl] and optional [headers].
   HttpAdapter({required this.baseUrl, this.headers});
+
+  /// Base endpoint used to build request URLs.
+  final String baseUrl;
+
+  /// Default headers used for every request.
+  final Map<String, String>? headers;
 
   @override
   Future<dynamic> get(String path, {Map<String, dynamic>? params}) async {
